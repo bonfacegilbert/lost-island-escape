@@ -1,8 +1,19 @@
 let ws, roomCode, myId, state, hintTimer;
 const $ = id => document.getElementById(id);
 const show = id => { for (const s of ["home","lobby","game","ending"]) $(s).hidden = s !== id; };
-function connect() {
+function connect(onOpen) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    onOpen();
+    return;
+  }
+
   ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host);
+
+  ws.onopen = () => {
+    $("error").textContent = "";
+    if (onOpen) onOpen();
+  };
+
   ws.onmessage = e => {
     const m = JSON.parse(e.data);
     if (m.type === "joined") { roomCode=m.code; myId=m.id; show("lobby"); render(); }
@@ -13,9 +24,9 @@ function connect() {
   };
 }
 function send(type, extra={}) { if(ws?.readyState===1) ws.send(JSON.stringify({type,...extra})); }
-$("create").onclick=()=>{ connect(); setTimeout(()=>send("create",{name:$("name").value||"Player 1"}),150); };
+$("create").onclick=()=>{ connect(()=>send("create",{name:$("name").value||"Player 1"})); };
 $("showJoin").onclick=()=> $("joinBox").hidden=false;
-$("join").onclick=()=>{ connect(); setTimeout(()=>send("join",{code:$("code").value,name:$("name").value||"Player"}),150); };
+$("join").onclick=()=>{ connect(()=>send("join",{code:$("code").value,name:$("name").value||"Player"})); };
 $("ready").onclick=()=>send("ready");
 $("start").onclick=()=>send("start");
 $("copy").onclick=async()=>{await navigator.clipboard?.writeText(location.href+"?room="+roomCode);$("copy").textContent="INVITE COPIED";};
