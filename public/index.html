@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lost Island: Escape</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="bg"></div>
+<main id="app">
+  <section id="home" class="screen">
+    <div class="eyebrow">MULTIPLAYER ESCAPE ROOM</div>
+    <h1>LOST<br><span>ISLAND</span></h1>
+    <p class="lead">Four survivors. One island. Twenty minutes to escape.</p>
+    <div class="panel">
+      <input id="name" maxlength="24" placeholder="Your name">
+      <div class="row">
+        <button id="create">CREATE ROOM</button>
+        <button id="showJoin" class="ghost">JOIN ROOM</button>
+      </div>
+      <div id="joinBox" hidden>
+        <input id="code" maxlength="4" placeholder="ROOM CODE">
+        <button id="join">JOIN</button>
+      </div>
+      <p id="error" class="error"></p>
+    </div>
+  </section>
+
+  <section id="lobby" class="screen" hidden>
+    <div class="top"><span>LOST ISLAND</span><span id="roomLabel"></span></div>
+    <div class="panel wide">
+      <div class="eyebrow">SURVIVORS' CAMP</div>
+      <h2>Gather your crew</h2>
+      <p>Share this room code or the page URL with your friends.</p>
+      <div class="code" id="bigCode"></div>
+      <button id="copy">COPY INVITE</button>
+      <div id="players" class="players"></div>
+      <button id="ready">I'M READY</button>
+      <button id="start" class="primary" hidden>START ESCAPE</button>
+    </div>
+  </section>
+
+  <section id="game" class="screen" hidden>
+    <header class="hud">
+      <div><small>TIME</small><strong id="timer">20:00</strong></div>
+      <div><small>ROOM</small><strong id="gameRoom"></strong></div>
+      <div><small>PLAYERS</small><strong id="count"></strong></div>
+    </header>
+    <div class="gamegrid">
+      <aside class="crew panel">
+        <h3>CREW</h3><div id="crew"></div>
+        <button id="hint" class="hint">💡 HINT <span>−30 SEC</span></button>
+      </aside>
+      <article class="puzzle panel">
+        <div class="eyebrow">ISLAND PUZZLE <span id="progress"></span></div>
+        <h2 id="puzzleTitle"></h2>
+        <p id="puzzleText"></p>
+        <div class="answerRow">
+          <input id="answer" placeholder="ENTER YOUR ANSWER" autocomplete="off">
+          <button id="submit">UNLOCK</button>
+        </div>
+        <p id="feedback"></p>
+        <div id="hintBox" class="hintBox" hidden></div>
+      </article>
+    </div>
+  </section>
+
+  <section id="ending" class="screen" hidden>
+    <div class="panel ending">
+      <div class="eyebrow">THE ISLAND REMEMBERS</div>
+      <h1 id="endingTitle"></h1>
+      <p id="endingText"></p>
+      <button onclick="location.reload()">PLAY AGAIN</button>
+    </div>
+  </section>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>
