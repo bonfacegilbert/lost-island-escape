@@ -39,7 +39,9 @@ function render(){
   if(state.phase==="lobby"){ show("lobby"); $("roomLabel").textContent="ROOM "+state.code; $("bigCode").textContent=state.code;
     $("players").innerHTML=state.players.map(p=>`<div class="player"><b>${esc(p.name)}</b><div class="ready">${p.ready?"✓ READY":"WAITING"}</div></div>`).join("");
     $("ready").textContent=state.players.find(p=>p.id===myId)?.ready?"NOT READY":"I'M READY";
-    $("start").hidden=!(state.players.length>=2 && state.players.every(p=>p.ready));
+    const n=state.players.length, allReady=state.players.every(p=>p.ready);
+    $("start").hidden=!(n>=2 && allReady);
+    $("lobbyHint").textContent=n<2?"Waiting for at least one more survivor — share the room code or invite link above.":allReady?"Everyone is ready. Start the escape!":"Waiting for everyone to tap I'M READY.";
   } else if(state.phase==="playing"){ show("game"); $("gameRoom").textContent=state.code; $("count").textContent=state.players.length;
     $("crew").innerHTML=state.players.map(p=>`<div class="player"><b>${esc(p.name)}</b><div class="ready">${p.ready?"READY":"IN GAME"}</div></div>`).join("");
     $("puzzleTitle").textContent=state.puzzle.title; $("puzzleText").textContent=state.puzzle.text;
