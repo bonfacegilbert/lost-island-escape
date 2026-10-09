@@ -26,10 +26,16 @@ const puzzles = [
   {
     id: "totems",
     title: "The Four Totems",
-    text: "Each player receives a symbol clue. The symbols are SUN, MOON, WAVE, LEAF. Arrange them from oldest to newest according to the clues shown on your screen.",
+    text: "Four totems bear the symbols SUN, MOON, WAVE and LEAF. Each survivor sees only their own age clue below — share your clues out loud, then enter the symbols from oldest to newest as one word.",
     answer: "sunmoonwaveleaf",
     success: "The four totems sink into the sand. A stone stairway appears.",
-    hint: "Think of a natural cycle: day, night, water, growth."
+    hint: "Think of a natural cycle: day, night, water, growth.",
+    fragments: [
+      "SUN — carved first. The oldest.",
+      "MOON — born after the sun, before the tides.",
+      "WAVE — younger than the moon, older than the forest.",
+      "LEAF — the last to grow. The youngest."
+    ]
   },
   {
     id: "cave",
@@ -42,10 +48,16 @@ const puzzles = [
   {
     id: "gate",
     title: "The Rescue Gate",
-    text: "Four players each see one fragment: PLAYER 1: 8. PLAYER 2: 3. PLAYER 3: 1. PLAYER 4: 5. The gate asks for the fragments from highest to lowest.",
+    text: "The gate needs the four number fragments from highest to lowest. Each survivor sees only their own fragment below — share them out loud, then enter the code.",
     answer: "8531",
     success: "The rescue gate unlocks. You hear an approaching boat.",
-    hint: "Put the four numbers in descending order."
+    hint: "Put the four numbers in descending order.",
+    fragments: [
+      "8 — the first fragment",
+      "3 — the second fragment",
+      "1 — the third fragment",
+      "5 — the fourth fragment"
+    ]
   }
 ];
 
@@ -56,25 +68,50 @@ function newRoomCode() {
   return code;
 }
 
-function roomState(room) {
+function effectiveElapsed(room) {
+  return Math.floor((Date.now() - room.startedAt) / 1000) + (room.timePenalty || 0);
+}
+
+function remainingSecs(room) {
+  if (!room.startedAt) return 20 * 60;
+  return Math.max(0, 20 * 60 - effectiveElapsed(room));
+}
+
+// Fragments are dealt round-robin so every fragment is seen by at least
+// one player no matter the crew size (2-4). Answers are stripped so they
+// never reach the client.
+function personalPuzzle(room, idx) {
+  const puzzle = puzzles[room.puzzleIndex];
+  if (!puzzle) return null;
+  const safe = { id: puzzle.id, title: puzzle.title, text: puzzle.text };
+  if (puzzle.fragments) {
+    const n = room.players.size;
+    safe.myFragments = puzzle.fragments.filter((_, j) => j % n === idx);
+  }
+  return safe;
+}
+
+function roomState(room, idx = 0) {
   return {
     code: room.code,
     phase: room.phase,
     startedAt: room.startedAt,
-    remaining: room.startedAt ? Math.max(0, 20 * 60 - Math.floor((Date.now() - room.startedAt) / 1000)) : 1200,
+    remaining: remainingSecs(room),
     players: [...room.players.values()].map(p => ({ id: p.id, name: p.name, ready: p.ready })),
     puzzleIndex: room.puzzleIndex,
     solved: room.solved,
     hintsUsed: room.hintsUsed,
     hintPenalty: room.hintsUsed * 30,
-    puzzle: puzzles[room.puzzleIndex],
+    puzzle: personalPuzzle(room, idx),
     ending: room.ending
   };
 }
 
 function broadcast(room) {
-  const msg = JSON.stringify({ type: "state", state: roomState(room) });
-  for (const p of room.players.values()) if (p.ws.readyState === 1) p.ws.send(msg);
+  const players = [...room.players.values()];
+  players.forEach((p, idx) => {
+    if (p.ws.readyState === 1) p.ws.send(JSON.stringify({ type: "state", state: roomState(room, idx) }));
+  });
 }
 
 function endRoom(room, ending) {
@@ -85,7 +122,7 @@ function endRoom(room, ending) {
 
 function evaluate(room) {
   if (room.puzzleIndex >= puzzles.length) {
-    const elapsed = Math.floor((Date.now() - room.startedAt) / 1000);
+    const elapsed = effectiveElapsed(room);
     const hints = room.hintsUsed;
     if (elapsed <= 600 && hints <= 1) endRoom(room, "perfect");
     else if (elapsed < 1200) endRoom(room, "narrow");
@@ -105,7 +142,7 @@ wss.on("connection", ws => {
       const id = crypto.randomUUID();
       const room = {
         code, phase: "lobby", startedAt: null, puzzleIndex: 0,
-        solved: [], hintsUsed: 0, ending: null, players: new Map()
+        solved: [], hintsUsed: 0, timePenalty: 0, ending: null, players: new Map()
       };
       player = { id, name: String(msg.name || "Player 1").slice(0, 24), ready: false, ws };
       room.players.set(id, player);
@@ -164,6 +201,7 @@ wss.on("connection", ws => {
     if (msg.type === "hint") {
       if (room.phase !== "playing") return;
       room.hintsUsed++;
+      room.timePenalty += 30;
       ws.send(JSON.stringify({ type: "hint", text: puzzles[room.puzzleIndex].hint }));
       broadcast(room);
     }
@@ -184,7 +222,7 @@ wss.on("connection", ws => {
 setInterval(() => {
   for (const room of rooms.values()) {
     if (room.phase === "playing") {
-      const left = 20 * 60 - Math.floor((Date.now() - room.startedAt) / 1000);
+      const left = remainingSecs(room);
       if (left <= 0) endRoom(room, "stranded");
       else broadcast(room);
     }
