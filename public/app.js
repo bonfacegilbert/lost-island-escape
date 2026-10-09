@@ -44,6 +44,12 @@ function render(){
     $("crew").innerHTML=state.players.map(p=>`<div class="player"><b>${esc(p.name)}</b><div class="ready">${p.ready?"READY":"IN GAME"}</div></div>`).join("");
     $("puzzleTitle").textContent=state.puzzle.title; $("puzzleText").textContent=state.puzzle.text;
     $("progress").textContent=`${state.puzzleIndex+1}/4`; $("hintBox").hidden=true; $("feedback").textContent="";
+    const clue=$("myClue");
+    if(state.puzzle.myFragments && state.puzzle.myFragments.length){
+      clue.hidden=false;
+      clue.innerHTML="<b>YOUR CLUE — ONLY YOU SEE THIS</b><br>"+state.puzzle.myFragments.map(f=>esc(f)).join("<br>");
+    } else clue.hidden=true;
+    $("hint").innerHTML=`💡 HINT <span>−30 SEC</span>${state.hintsUsed?` <span>(${state.hintsUsed} USED)</span>`:""}`;
     updateTimer(state.remaining);
   } else if(state.phase==="ended"){ show("ending"); const map={perfect:["PERFECT ESCAPE","You solved the island's secrets with time to spare. The rescue boat carries your crew—and the hidden treasure—home."],narrow:["NARROW ESCAPE","The rescue boat arrived just in time. Your crew made it off the island, but the island kept some of its secrets."],stranded:["STRANDED","The storm closed in before the escape was complete. The island remains your prison—for now."]}; const x=map[state.ending]||map.stranded;$("endingTitle").textContent=x[0];$("endingText").textContent=x[1];}
 }
